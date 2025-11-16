@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -30,3 +40,5 @@ body {
     display: none !important;
   }
 }
+
+

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import GamePage from '../components/GamePage';
 
 export default function HomePage() {
-  const [isDesktop, setIsDesktop] = useState(true);
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
 
   useEffect(() => {
     const checkScreen = () => {
@@ -12,9 +13,16 @@ export default function HomePage() {
 
     checkScreen();
     window.addEventListener('resize', checkScreen);
-
     return () => window.removeEventListener('resize', checkScreen);
   }, []);
+
+  if (isDesktop === null) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
+        <p className="text-xs text-slate-400">Loading…</p>
+      </main>
+    );
+  }
 
   if (!isDesktop) {
     return (
@@ -23,14 +31,13 @@ export default function HomePage() {
           Desktop Only 🖥️
         </h1>
         <p className="text-slate-300 max-w-md text-sm leading-relaxed">
-          This game is built for large screens and is not available on mobile devices.
-          Please open it on a desktop or laptop for the full experience.
+          This game is built for large screens and is only available on desktop
+          and laptop devices. Please open it on a bigger screen to start
+          canceling meetings.
         </p>
       </main>
     );
   }
 
-  return (
-    <GameWrapper />
-  );
+  return <GamePage />;
 }
