@@ -38,15 +38,17 @@ async function setup(engine = game, {pixelRatio = 1, displayWidth = 840} = {}) {
   let paddle = null;
   const counters = [];
   const labels = [];
+  const meetingFills = [];
   let transform = null;
   const context = new Proxy({
+    fill() { if (['#bfdbfe', '#a7f3d0', '#fde68a', '#fed7aa', '#e9d5ff'].includes(this.fillStyle)) meetingFills.push(this.fillStyle); },
     setTransform(...values) { transform = values; },
     measureText(text) { return {width: text.length * 6}; },
     arc(x, y) { ball = {x, y}; },
     moveTo(x, y) { if (y === game.PADDLE_Y) paddle = {left: x - 8}; },
     fillText(text, x, y) {
       if (/^\d+ meetings? to cancel$/.test(text)) counters.push(Number.parseInt(text));
-      if (this.fillStyle === '#111827' && Number.parseFloat(this.font) <= 11) labels.push({text, x, y, size:Number.parseFloat(this.font)});
+      if (this.fillStyle === '#111827' && Number.parseFloat(this.font) <= 11) labels.push({text, x, y, size:Number.parseFloat(this.font), font:this.font, stroke:this.strokeStyle, lineWidth:this.lineWidth});
     },
   }, {get(target, key) { return key in target ? target[key] : () => {}; }});
   dom.window.HTMLCanvasElement.prototype.getContext = () => context;
@@ -70,7 +72,7 @@ async function setup(engine = game, {pixelRatio = 1, displayWidth = 840} = {}) {
     await act(() => callbacks.forEach(callback => callback(now)));
   }
   return {
-    frames, timers, counters, labels, click, frame,
+    frames, timers, counters, labels, meetingFills, click, frame,
     get transform() { return transform; },
     get ball() { return ball; },
     get paddle() { return paddle; },
@@ -199,8 +201,10 @@ test('half-hour meeting text stays inside the shortest generated boxes', async (
     await h.start();
     await h.frame();
     assert.ok(h.labels.length > 0);
-    assert.equal(h.labels.length, h.counters.at(-1));
-    for (const label of h.labels) {
+    assert.equal(h.labels.length, h.counters.at(-1) + 2);
+    const shortLabels = h.labels.filter(label => label.size === 10);
+    assert.ok(shortLabels.length > 0);
+    for (const label of shortLabels) {
       assert.ok(label.size >= 10);
       assert.ok(label.y - label.size / 2 >= 58);
       assert.ok(label.y + label.size / 2 <= 72);
@@ -218,7 +222,7 @@ test('Milan collision opens a persistent popup, stops the loop, and Try again st
     return hitMilan ? {hit:bricks.find(brick => brick.isMilan),lost:true} : {hit:null,lost:false};
   }});
   try {
-    assert.match(document.body.textContent, /two pink/);
+    assert.match(document.body.textContent, /Every calendar has two/);
     await h.start();
     await h.frame();
     const count = h.counters.at(-1);
@@ -239,5 +243,25 @@ test('Milan collision opens a persistent popup, stops the loop, and Try again st
     await h.frame();
     assert.equal(rounds.length, 2);
     assert.equal(rounds[1].filter(brick => brick.isMilan).length, 2);
+  } finally { await h.close(); }
+});
+
+
+test('Milan meetings use the same palette, border, font, and single-line labels as ordinary meetings', async () => {
+  const h = await setup();
+  try {
+    await h.start();
+    await h.frame();
+    assert.equal(h.labels.length, h.counters.at(-1) + 2);
+    assert.equal(h.meetingFills.length, h.labels.length);
+    const colors = ['#bfdbfe', '#a7f3d0', '#fde68a', '#fed7aa', '#e9d5ff'];
+    h.labels.forEach((label, index) => {
+      assert.equal(h.meetingFills[index], colors[index % colors.length]);
+      assert.equal(label.stroke, '#d1d5db');
+      assert.equal(label.lineWidth, 1);
+      assert.doesNotMatch(label.font, /bold/);
+    });
+    assert.ok(h.labels[0].text.startsWith('talk with'));
+    assert.ok(h.labels[1].text.startsWith('talk with'));
   } finally { await h.close(); }
 });

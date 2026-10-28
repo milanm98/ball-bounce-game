@@ -309,14 +309,14 @@ export default function GamePage() {
     bricks.forEach((brick, index) => {
       if (!brick.active) return;
 
-      const color = brick.isMilan ? '#ffe4e6' : colors[index % colors.length];
+      const color = colors[index % colors.length];
 
       ctx.fillStyle = color;
       roundRect(ctx, brick.x, brick.y, brick.width, brick.height, 6);
       ctx.fill();
 
-      ctx.strokeStyle = brick.isMilan ? '#e11d48' : '#d1d5db';
-      ctx.lineWidth = brick.isMilan ? 2 : 1;
+      ctx.strokeStyle = '#d1d5db';
+      ctx.lineWidth = 1;
       ctx.stroke();
 
       ctx.save();
@@ -325,20 +325,14 @@ export default function GamePage() {
       const fontSize = Math.min(11, brick.height - 4);
       ctx.font =
         `${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-      ctx.fillStyle = brick.isMilan ? '#881337' : '#111827';
+      ctx.fillStyle = '#111827';
       const paddingX = 6;
       const maxWidth = brick.width - paddingX * 2;
       const title = fitText(ctx, brick.title, maxWidth);
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       const labelY = brick.y + Math.min(brick.height / 2, 4 + fontSize / 2);
-      if (brick.isMilan) {
-        ctx.font = 'bold 11px system-ui, sans-serif';
-        ctx.fillText(fitText(ctx, 'talk with Milan', maxWidth), brick.x + paddingX, brick.y + 13);
-        ctx.fillText(fitText(ctx, 'about memes', maxWidth), brick.x + paddingX, brick.y + 28);
-      } else {
-        ctx.fillText(title, brick.x + paddingX, labelY);
-      }
+      ctx.fillText(title, brick.x + paddingX, labelY);
       ctx.restore();
     });
 
@@ -366,7 +360,7 @@ export default function GamePage() {
     ctx.fillStyle = '#9ca3af';
     ctx.textAlign = 'start';
     ctx.fillText(
-      'Move your mouse (or use ← →) to control the paddle. Cancel meetings; avoid the two pink Milan meetings.',
+      'Move your mouse (or use ← →) to control the paddle. Cancel meetings; avoid the two meetings with Milan.',
       16,
       CANVAS_HEIGHT - 10
     );
@@ -454,8 +448,8 @@ export default function GamePage() {
               Enter your name and start canceling your schedule.
             </p>
 
-            <p className="text-sm text-rose-200 mb-4">
-              Every calendar has two pink “{MILAN_MEETING_TITLE}” meetings,
+            <p className="text-sm text-slate-300 mb-4">
+              Every calendar has two “{MILAN_MEETING_TITLE}” meetings,
               placed far apart. Hit either one and it’s game over! Cancel the
               other meetings and leave both Milan meetings untouched.
             </p>

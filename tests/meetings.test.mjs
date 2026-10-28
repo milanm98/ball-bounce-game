@@ -20,7 +20,7 @@ test('every calendar reserves exactly two separated, visible, non-overlapping Mi
         assert.ok(bricks.some(b => !b.isMilan));
         assert.equal(new Set(bricks.map(b => b.id)).size, bricks.length);
         for (const brick of protectedMeetings) {
-          assert.ok(brick.height >= 40, 'full two-line title must fit');
+          assert.ok(brick.height >= 40, 'reserved meeting keeps its calendar height');
           assert.ok(brick.active && brick.x >= 56 && brick.x + brick.width <= 840);
           assert.ok(brick.y >= 56 && brick.y + brick.height <= 488);
           for (const other of bricks) {

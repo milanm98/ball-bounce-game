@@ -49,4 +49,4 @@ The desktop layout fixes and verification results are recorded in [the 2026-10-2
 
 ## Milan meetings
 
-Every calendar reserves exactly two pink **talk with Milan about memes** meetings at opposite ends of the week, one early and one late in the day. Avoid both: hitting either immediately ends the round and opens the Milan game-over popup. Try again starts a fresh calendar. Cancel all ordinary meetings to win; the counter excludes the two protected Milan meetings.
+Every calendar reserves exactly two **talk with Milan about memes** meetings at opposite ends of the week, one early and one late in the day. They use the same colors, borders, and text styling as other meetings. Read the titles and avoid both: hitting either immediately ends the round and opens the Milan game-over popup. Try again starts a fresh calendar. Cancel all ordinary meetings to win; the counter excludes the two protected Milan meetings.

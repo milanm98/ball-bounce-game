@@ -66,3 +66,11 @@ Browser QA covered the new intro and full two-line meeting labels at 1024×600, 
 - [Intro rule](milan-intro.png)
 - [Two distant Milan meetings](milan-meetings.png)
 - [Milan game-over popup](milan-game-over.png)
+
+## Follow-up: Milan meetings blend in
+
+Removed the special pink fill, red/bold border, bold text, and two-line layout. Milan meetings now go through exactly the same palette, one-pixel gray border, normal font, and measured single-line label rendering as every other meeting. Instructions no longer refer to a special meeting color. Exactly two Milan meetings and the collision/popup rule are unchanged.
+
+Verified the appearance in browser at 1024×600 with no console errors or warnings. All 29 automated tests, lint, TypeScript, and the production build passed. A rendering regression test checks the shared styling for every meeting.
+
+![Milan meetings with ordinary styling](milan-ordinary-style.png)
