@@ -8,6 +8,7 @@ import { JSDOM } from 'jsdom';
 import React, { act } from 'react';
 import * as game from '../lib/game.ts';
 import * as canvasText from '../lib/canvas-text.ts';
+import * as meetings from '../lib/meetings.ts';
 
 // Load the actual TSX component without running a Next server or a browser.
 const require = createRequire(import.meta.url);
@@ -17,7 +18,7 @@ const componentCode = ts.transpileModule(readFileSync(new URL('../components/Gam
 function loadGame(engine) {
   const compiledModule = { exports: {} };
   runInThisContext('(function(require,module,exports){' + componentCode + '\n})')(
-    name => name === '../lib/game' ? engine : name === '../lib/canvas-text' ? canvasText : require(name), compiledModule, compiledModule.exports);
+    name => name === '../lib/game' ? engine : name === '../lib/canvas-text' ? canvasText : name === '../lib/meetings' ? meetings : require(name), compiledModule, compiledModule.exports);
   return compiledModule.exports.default;
 }
 
@@ -27,6 +28,8 @@ async function setup(engine = game, {pixelRatio = 1, displayWidth = 840} = {}) {
   globalThis.document = dom.window.document;
   Object.defineProperty(dom.window, 'devicePixelRatio', {value: pixelRatio});
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
+  dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
   const frames = new Map();
   const timers = new Map();
   let nextId = 0;
@@ -42,7 +45,7 @@ async function setup(engine = game, {pixelRatio = 1, displayWidth = 840} = {}) {
     arc(x, y) { ball = {x, y}; },
     moveTo(x, y) { if (y === game.PADDLE_Y) paddle = {left: x - 8}; },
     fillText(text, x, y) {
-      if (/^\d+ meetings? remaining$/.test(text)) counters.push(Number.parseInt(text));
+      if (/^\d+ meetings? to cancel$/.test(text)) counters.push(Number.parseInt(text));
       if (this.fillStyle === '#111827' && Number.parseFloat(this.font) <= 11) labels.push({text, x, y, size:Number.parseFloat(this.font)});
     },
   }, {get(target, key) { return key in target ? target[key] : () => {}; }});
@@ -94,7 +97,7 @@ test('actual component: live counter, controls, game over, restart, and unmount 
     assert.equal(document.querySelector('button').disabled, true);
     await h.start();
     assert.equal(document.querySelector('input'), null);
-    assert.doesNotMatch(document.body.textContent, /All meetings canceled/);
+    assert.doesNotMatch(document.body.textContent, /All regular meetings canceled/);
     assert.equal(h.frames.size, 1);
     await h.frame();
     const initialCount = h.counters.at(-1);
@@ -131,18 +134,18 @@ test('actual component: live counter, controls, game over, restart, and unmount 
 
 test('actual component: final hit stops loop and New day restarts it', async () => {
   const h = await setup({...game, stepGame(state, bricks) {
-    const hit = bricks.find(brick => brick.active);
+    const hit = bricks.find(brick => brick.active && !brick.isMilan);
     if (hit) hit.active = false;
     return {hit: hit ?? null, lost: false};
   }});
   try {
     await h.start();
     for (let i = 0; i < 100 && h.frames.size; i++) await h.frame();
-    assert.match(document.body.textContent, /All meetings canceled/);
+    assert.match(document.body.textContent, /All regular meetings canceled/);
     assert.equal(h.counters.at(-1), 0);
     assert.equal(h.frames.size, 0);
     await h.click([...document.querySelectorAll('button')].find(button => button.textContent === 'New day'));
-    assert.doesNotMatch(document.body.textContent, /All meetings canceled/);
+    assert.doesNotMatch(document.body.textContent, /All regular meetings canceled/);
     assert.equal(h.frames.size, 1);
     assert.equal(h.timers.size, 0);
     await h.frame();
@@ -157,7 +160,7 @@ test('unmount during a round cancels frames and a pending hit toast', async () =
   let calls = 0;
   const h = await setup({...game, stepGame(state, bricks) {
     calls++;
-    const hit = calls === 1 ? bricks[0] : null;
+    const hit = calls === 1 ? bricks.find(brick => !brick.isMilan) : null;
     if (hit) hit.active = false;
     return {hit, lost: false};
   }});
@@ -195,7 +198,8 @@ test('half-hour meeting text stays inside the shortest generated boxes', async (
   try {
     await h.start();
     await h.frame();
-    assert.equal(h.labels.length, 7);
+    assert.ok(h.labels.length > 0);
+    assert.equal(h.labels.length, h.counters.at(-1));
     for (const label of h.labels) {
       assert.ok(label.size >= 10);
       assert.ok(label.y - label.size / 2 >= 58);
@@ -203,4 +207,37 @@ test('half-hour meeting text stays inside the shortest generated boxes', async (
       assert.ok(label.text.length * 6 <= 88);
     }
   } finally { await h.close(); Math.random = originalRandom; }
+});
+
+
+test('Milan collision opens a persistent popup, stops the loop, and Try again starts a fresh round', async () => {
+  const rounds = [];
+  let hitMilan = true;
+  const h = await setup({...game, stepGame(state, bricks) {
+    if (!rounds.includes(bricks)) rounds.push(bricks);
+    return hitMilan ? {hit:bricks.find(brick => brick.isMilan),lost:true} : {hit:null,lost:false};
+  }});
+  try {
+    assert.match(document.body.textContent, /two pink/);
+    await h.start();
+    await h.frame();
+    const count = h.counters.at(-1);
+    await h.frame();
+    const dialog = document.querySelector('dialog');
+    assert.ok(dialog.open);
+    assert.equal(document.getElementById('milan-game-over-message').textContent, meetings.MILAN_GAME_OVER_MESSAGE);
+    assert.equal(h.frames.size, 0);
+    assert.equal(h.timers.size, 0, 'popup must persist until user action');
+    assert.doesNotMatch(document.body.textContent, /Meeting canceled:/);
+    assert.ok(rounds[0].filter(brick => brick.isMilan).every(brick => brick.active));
+    assert.equal(count, rounds[0].filter(brick => !brick.isMilan).length);
+    hitMilan = false;
+    await h.click([...dialog.querySelectorAll('button')].find(button => button.textContent.trim() === 'Try again'));
+    assert.equal(document.querySelector('dialog'), null);
+    assert.equal(h.frames.size, 1);
+    await h.frame();
+    await h.frame();
+    assert.equal(rounds.length, 2);
+    assert.equal(rounds[1].filter(brick => brick.isMilan).length, 2);
+  } finally { await h.close(); }
 });

@@ -54,3 +54,15 @@ Replaced the joke meeting titles with common team meetings, including Sprint Ret
 Browser-checked the updated labels, restart, and arrow controls. No browser console errors or warnings were captured. All 25 automated tests, ESLint, TypeScript, and the production build passed. The added launch test verifies one second of actual ball travel.
 
 ![Updated meeting names](realistic-meetings.png)
+
+## Follow-up: protected Milan meetings
+
+Every calendar now contains exactly two pink meetings titled **talk with Milan about memes**. Placement reserves opposite ends of the week, separated vertically by at least 200 logical pixels, before generating ordinary meetings. The counter and win condition include only ordinary meetings.
+
+Browser QA covered the new intro and full two-line meeting labels at 1024×600, plus the modal at 1024×600 and 1920×1080. Using temporary controlled launch positions, the real physics collision was exercised against each protected meeting. Both displayed the exact requested message. The modal received keyboard focus; Try again regenerated the calendar, and Escape dismissed the popup. All controlled launch code was removed, and a final normal launch was verified. No browser console errors or warnings were captured.
+
+28 automated tests passed, including exactly two distant, non-overlapping Milan meetings across 300 calendars, loss on either meeting, popup persistence and retry, and winning while preserving the protected meetings. ESLint, TypeScript, and the production build passed.
+
+- [Intro rule](milan-intro.png)
+- [Two distant Milan meetings](milan-meetings.png)
+- [Milan game-over popup](milan-game-over.png)

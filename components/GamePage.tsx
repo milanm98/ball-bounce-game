@@ -2,6 +2,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { createTextFitter } from '../lib/canvas-text';
+import { createMeetingCalendar, MILAN_GAME_OVER_MESSAGE, MILAN_MEETING_TITLE, SLOTS_PER_DAY } from '../lib/meetings';
 
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_Y,
@@ -9,32 +10,7 @@ import {
   type GameState, type MeetingBrick,
 } from '../lib/game';
 
-// 08:00 to 20:00 in 30-minute slots.
-const SLOTS_PER_DAY = 24;
 const fitText = createTextFitter();
-
-const MEETING_TITLES = [
-  'Daily Standup',
-  'Sprint Planning',
-  'Sprint Retrospective',
-  'Code Review',
-  'Project Sync',
-  'Technical Debt Review',
-  'Product Planning',
-  'Cross-Team Sync',
-  'Roadmap Review',
-  'Incident Postmortem',
-  'Quarterly All-Hands',
-  'Stakeholder Sync',
-  'Backlog Refinement',
-  'Architecture Review',
-  'QA Test Planning',
-  'Design Handoff',
-  'Sprint Review',
-  'Team Planning',
-  'Release Planning',
-  'Customer Feedback',
-];
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -64,6 +40,9 @@ export default function GamePage() {
 
   const [gameOverMessage, setGameOverMessage] = useState<string | null>(null);
 
+  const [milanGameOver, setMilanGameOver] = useState(false);
+  const milanDialogRef = useRef<HTMLDialogElement | null>(null);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameStateRef = useRef<GameState | null>(null);
   const bricksRef = useRef<MeetingBrick[]>([]);
@@ -84,10 +63,11 @@ export default function GamePage() {
     }, 1200);
   };
 
-  const triggerGameOver = () => {
+  const triggerGameOver = (hitMilan = false) => {
     if (toastTimeoutRef.current !== null) window.clearTimeout(toastTimeoutRef.current);
     setShowToast(false);
-    setGameOverMessage('Game over. You now have to attend the remaining meetings :D');
+    setMilanGameOver(hitMilan);
+    setGameOverMessage(hitMilan ? null : 'Game over. You now have to attend the remaining meetings :D');
 
     // Stop loop and reset to start screen
     if (animationFrameRef.current !== null) {
@@ -106,89 +86,17 @@ export default function GamePage() {
     if (gameOverTimeoutRef.current) {
       window.clearTimeout(gameOverTimeoutRef.current);
     }
-    gameOverTimeoutRef.current = window.setTimeout(() => {
+    gameOverTimeoutRef.current = hitMilan ? null : window.setTimeout(() => {
       setGameOverMessage(null);
     }, 2500);
   };
 
   const generateMeetingBricks = () => {
-    const bricks: MeetingBrick[] = [];
-
-    const headerHeight = 56;
-    const footerHeight = 32;
-    const leftGutter = 56;
-    const gridTop = headerHeight;
-    const gridBottom = CANVAS_HEIGHT - footerHeight - 40;
-    const gridHeight = gridBottom - gridTop;
-    const gridWidth = CANVAS_WIDTH - leftGutter;
-
-    const cols = 7;
-    const slotsPerDay = SLOTS_PER_DAY;
-
-    const colWidth = gridWidth / cols;
-    const slotHeight = gridHeight / slotsPerDay;
-
-    let id = 0;
-
-    // meetings only in upper part of the day so there's a gap at the bottom
-    const maxDurationSlots = 6; // up to 3h
-    const lastMeetingEndSlot = slotsPerDay - 6; // leave 3h (6 slots) free at bottom
-    const maxStartSlot = lastMeetingEndSlot - maxDurationSlots;
-
-    for (let day = 0; day < cols; day++) {
-      const meetingsForDay = randomInt(2, 5); // 2–4 meetings per day
-
-      let attempts = 0;
-      let created = 0;
-
-      while (created < meetingsForDay && attempts < 25) {
-        attempts++;
-
-        const startSlot = randomInt(0, Math.max(0, maxStartSlot));
-        const durationSlots = randomInt(1, maxDurationSlots);
-        const endSlot = Math.min(slotsPerDay, startSlot + durationSlots);
-
-        const paddingX = 6;
-        const paddingY = 2;
-
-        const x = leftGutter + day * colWidth + paddingX;
-        const y = gridTop + startSlot * slotHeight + paddingY;
-        const width = colWidth - paddingX * 2;
-        const height = (endSlot - startSlot) * slotHeight - paddingY * 2;
-
-        const overlaps = bricks.some(
-          (b) =>
-            b.active &&
-            Math.abs(b.x - x) < 1 &&
-            rectsOverlap(
-              { x, y, width, height },
-              { x: b.x, y: b.y, width: b.width, height: b.height }
-            )
-        );
-
-        if (overlaps) continue;
-
-        const titleIndex = (id + day + startSlot) % MEETING_TITLES.length;
-        const title = MEETING_TITLES[titleIndex];
-
-        bricks.push({
-          id,
-          x,
-          y,
-          width,
-          height,
-          title,
-          active: true,
-        });
-
-        id++;
-        created++;
-      }
-    }
-
+    const bricks = createMeetingCalendar();
+    const cancelableCount = bricks.filter(brick => !brick.isMilan).length;
     bricksRef.current = bricks;
-    setRemainingMeetings(bricks.length);
-    remainingMeetingsRef.current = bricks.length;
+    setRemainingMeetings(cancelableCount);
+    remainingMeetingsRef.current = cancelableCount;
   };
 
   const startGame = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -211,6 +119,7 @@ export default function GamePage() {
     setShowToast(false);
     setCanceledTitle(null);
     setGameOverMessage(null);
+    setMilanGameOver(false);
   };
 
   const resetGame = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -235,14 +144,14 @@ export default function GamePage() {
           const state = gameStateRef.current;
           if (!state || remainingMeetingsRef.current === 0) break;
           const result = stepGame(state, bricksRef.current, now);
+          if (result.lost) {
+            triggerGameOver(result.hit?.isMilan ?? false);
+            return;
+          }
           if (result.hit) {
             remainingMeetingsRef.current = Math.max(0, remainingMeetingsRef.current - 1);
             setRemainingMeetings(remainingMeetingsRef.current);
             showMeetingCanceledToast(result.hit.title);
-          }
-          if (result.lost) {
-            triggerGameOver();
-            return;
           }
         }
         drawGame();
@@ -328,7 +237,7 @@ export default function GamePage() {
     ctx.fillText(
       `${remainingMeetings} meeting${
         remainingMeetings === 1 ? '' : 's'
-      } remaining`,
+      } to cancel`,
       CANVAS_WIDTH - 190,
       headerHeight / 2 - 4
     );
@@ -400,14 +309,14 @@ export default function GamePage() {
     bricks.forEach((brick, index) => {
       if (!brick.active) return;
 
-      const color = colors[index % colors.length];
+      const color = brick.isMilan ? '#ffe4e6' : colors[index % colors.length];
 
       ctx.fillStyle = color;
       roundRect(ctx, brick.x, brick.y, brick.width, brick.height, 6);
       ctx.fill();
 
-      ctx.strokeStyle = '#d1d5db';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = brick.isMilan ? '#e11d48' : '#d1d5db';
+      ctx.lineWidth = brick.isMilan ? 2 : 1;
       ctx.stroke();
 
       ctx.save();
@@ -416,14 +325,20 @@ export default function GamePage() {
       const fontSize = Math.min(11, brick.height - 4);
       ctx.font =
         `${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-      ctx.fillStyle = '#111827';
+      ctx.fillStyle = brick.isMilan ? '#881337' : '#111827';
       const paddingX = 6;
       const maxWidth = brick.width - paddingX * 2;
       const title = fitText(ctx, brick.title, maxWidth);
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       const labelY = brick.y + Math.min(brick.height / 2, 4 + fontSize / 2);
-      ctx.fillText(title, brick.x + paddingX, labelY);
+      if (brick.isMilan) {
+        ctx.font = 'bold 11px system-ui, sans-serif';
+        ctx.fillText(fitText(ctx, 'talk with Milan', maxWidth), brick.x + paddingX, brick.y + 13);
+        ctx.fillText(fitText(ctx, 'about memes', maxWidth), brick.x + paddingX, brick.y + 28);
+      } else {
+        ctx.fillText(title, brick.x + paddingX, labelY);
+      }
       ctx.restore();
     });
 
@@ -451,7 +366,7 @@ export default function GamePage() {
     ctx.fillStyle = '#9ca3af';
     ctx.textAlign = 'start';
     ctx.fillText(
-      'Move your mouse (or use ← →) to control the paddle. Hit meetings to cancel them.',
+      'Move your mouse (or use ← →) to control the paddle. Cancel meetings; avoid the two pink Milan meetings.',
       16,
       CANVAS_HEIGHT - 10
     );
@@ -516,6 +431,13 @@ export default function GamePage() {
     };
   }, []);
 
+  useEffect(() => {
+    const dialog = milanDialogRef.current;
+    if (!dialog) return;
+    if (milanGameOver && !dialog.open) dialog.showModal();
+    else if (!milanGameOver && dialog.open) dialog.close();
+  }, [milanGameOver]);
+
   const allCleared = hasStarted && remainingMeetings === 0;
 
   return (
@@ -530,6 +452,12 @@ export default function GamePage() {
             <p className="text-sm text-slate-300 mb-4">
               A tiny arcade game for developers drowning in calendar invites.
               Enter your name and start canceling your schedule.
+            </p>
+
+            <p className="text-sm text-rose-200 mb-4">
+              Every calendar has two pink “{MILAN_MEETING_TITLE}” meetings,
+              placed far apart. Hit either one and it’s game over! Cancel the
+              other meetings and leave both Milan meetings untouched.
             </p>
 
             <label className="block text-sm mb-1" htmlFor="player-name">
@@ -559,6 +487,22 @@ export default function GamePage() {
         </div>
       )}
 
+      {milanGameOver && <dialog
+        ref={milanDialogRef}
+        aria-labelledby="milan-game-over-title"
+        aria-describedby="milan-game-over-message"
+        onCancel={() => setMilanGameOver(false)}
+        onClose={() => setMilanGameOver(false)}
+        className="m-auto w-[calc(100vw-2rem)] max-w-md rounded-2xl border border-rose-400 bg-slate-900 p-6 text-slate-100 shadow-2xl backdrop:bg-slate-950/80"
+      >
+        <h2 id="milan-game-over-title" className="text-xl font-semibold mb-3">Game over</h2>
+        <p id="milan-game-over-message" className="text-sm leading-relaxed mb-5">{MILAN_GAME_OVER_MESSAGE}</p>
+        <button type="button" onClick={startGame}
+          className="w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-sky-400 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-400">
+          Try again
+        </button>
+      </dialog>}
+
       {/* Toast: meeting canceled */}
       {showToast && canceledTitle && (
         <div className="pointer-events-none fixed top-6 inset-x-0 flex justify-center z-20">
@@ -583,7 +527,7 @@ export default function GamePage() {
         <div className="fixed top-16 inset-x-0 flex justify-center z-20">
           <div className="bg-sky-500/95 text-slate-950 text-sm px-5 py-3 rounded-full shadow-lg border border-sky-600 flex items-center gap-4">
             <span className="font-semibold">
-              🎉 All meetings canceled. You own your calendar again.
+              🎉 All regular meetings canceled. Milan’s meme chats are safe.
             </span>
             <button
               onClick={resetGame}
@@ -616,22 +560,6 @@ export default function GamePage() {
 }
 
 /* Helpers */
-
-function randomInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function rectsOverlap(
-  a: { x: number; y: number; width: number; height: number },
-  b: { x: number; y: number; width: number; height: number }
-) {
-  return !(
-    a.x + a.width <= b.x ||
-    a.x >= b.x + b.width ||
-    a.y + a.height <= b.y ||
-    a.y >= b.y + b.height
-  );
-}
 
 function roundRect(
   ctx: CanvasRenderingContext2D,

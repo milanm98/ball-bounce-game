@@ -26,6 +26,7 @@ export type MeetingBrick = {
   height: number;
   title: string;
   active: boolean;
+  isMilan?: boolean;
 };
 
 export function clamp(value: number, min: number, max: number) {
@@ -124,6 +125,9 @@ export function stepGame(state: GameState, bricks: MeetingBrick[], now: number):
     const dx = state.ballX - clamp(state.ballX, brick.x, brick.x + brick.width);
     const dy = state.ballY - clamp(state.ballY, brick.y, brick.y + brick.height);
     if (dx * dx + dy * dy > BALL_RADIUS * BALL_RADIUS) continue;
+
+    // Protected meetings end the round before cancellation or speed changes.
+    if (brick.isMilan) return { hit: brick, lost: true };
 
     // Resolve against the entry face, not the nearest face after penetration.
     // Thin meetings can otherwise reflect the ball along the wrong axis.
