@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#020617"/>
+  <circle cx="1040" cy="120" r="330" fill="#0c4a6e" opacity=".22"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="72" y="106" font-size="15" font-weight="700" letter-spacing="3" fill="#38bdf8">YOUR CALENDAR. YOUR RULES.</text>
+    <text x="68" y="216" font-size="74" font-weight="700" fill="#f8fafc">Cancel All</text>
+    <text x="68" y="300" font-size="74" font-weight="700" fill="#f8fafc">Meetings</text>
+    <text x="72" y="361" font-size="24" fill="#e2e8f0">Turn your calendar into an arcade.</text>
+    <text x="72" y="398" font-size="18" fill="#94a3b8">Cancel the meetings. Keep the meme chats.</text>
+    <rect x="72" y="447" width="180" height="52" rx="12" fill="#0ea5e9"/>
+    <text x="162" y="480" text-anchor="middle" font-size="19" font-weight="700" fill="#020617">Play for free</text>
+    <text x="72" y="568" font-size="17" fill="#94a3b8">cancel-meet.vercel.app</text>
+    <rect x="646" y="99" width="482" height="397" rx="20" fill="#f8fafc"/>
+    <text x="666" y="130" font-size="16" font-weight="700" fill="#0f172a">Dev Calendar</text>
+    <g fill="#64748b" font-size="11" text-anchor="middle">
+      <text x="681" y="160">Mon</text><text x="749" y="160">Tue</text><text x="817" y="160">Wed</text><text x="885" y="160">Thu</text><text x="953" y="160">Fri</text><text x="1021" y="160">Sat</text><text x="1089" y="160">Sun</text>
+    </g>
+    <g stroke="#e2e8f0" stroke-width="1">
+      <path d="M646 175h482M646 225h482M646 275h482M646 325h482M646 375h482M646 425h482M646 475h482"/>
+      <path d="M715 175v321M783 175v321M851 175v321M919 175v321M987 175v321M1055 175v321"/>
+    </g>
+    <g stroke="#cbd5e1" stroke-width="1">
+      <rect x="654" y="185" width="53" height="72" rx="5" fill="#bfdbfe"/>
+      <rect x="723" y="237" width="52" height="104" rx="5" fill="#fde68a"/>
+      <rect x="791" y="184" width="52" height="56" rx="5" fill="#a7f3d0"/>
+      <rect x="859" y="285" width="52" height="89" rx="5" fill="#fed7aa"/>
+      <rect x="927" y="185" width="52" height="123" rx="5" fill="#e9d5ff"/>
+      <rect x="995" y="237" width="52" height="71" rx="5" fill="#bfdbfe"/>
+      <rect x="1063" y="185" width="57" height="72" rx="5" fill="#a7f3d0"/>
+      <rect x="654" y="322" width="53" height="72" rx="5" fill="#e9d5ff"/>
+      <rect x="791" y="355" width="52" height="71" rx="5" fill="#bfdbfe"/>
+      <rect x="995" y="356" width="52" height="56" rx="5" fill="#fde68a"/>
+      <rect x="1063" y="321" width="57" height="91" rx="5" fill="#fed7aa"/>
+    </g>
+    <path d="m870 484 28-28" stroke="#fb923c" stroke-width="4" stroke-linecap="round" opacity=".45"/>
+    <circle cx="916" cy="440" r="12" fill="#f97316"/>
+    <rect x="811" y="527" width="153" height="14" rx="7" fill="#0ea5e9"/>
+    <text x="887" y="578" text-anchor="middle" font-size="15" fill="#94a3b8">A free desktop arcade game</text>
+  </g>
+</svg>

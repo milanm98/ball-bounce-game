@@ -86,3 +86,9 @@ All 31 tests, lint, TypeScript, and the production build passed. Tests verify al
 - [Small laptop full titles](full-titles-1024x600.png)
 - [Laptop full titles](full-titles-1366x768.png)
 - [Viewport results](full-title-viewport-results.json)
+
+## Follow-up: public branding, metadata, and SEO
+
+Replaced the live starter title/description and favicon with Cancel All Meetings branding. Added matching SVG, 32/48-pixel ICO, and 180-pixel Apple icons, a 1200×630 Open Graph/Twitter sharing card, canonical URL, robots directives, sitemap, and VideoGame JSON-LD.
+
+Verified the actual prerendered production HTML: title, description, absolute canonical and social image URLs, Open Graph site name, Twitter large-image card, icon tags, and structured data. Decoded both ICO entries and checked PNG dimensions. The generated robots and sitemap bodies use the public domain. The local browser shows the correct tab title and metadata. All 31 gameplay tests, lint, TypeScript, and the production build passed.
