@@ -1,35 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { createTextFitter } from '../lib/canvas-text';
 
-const CANVAS_WIDTH = 840;
-const CANVAS_HEIGHT = 560;
+import {
+  CANVAS_WIDTH, CANVAS_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_Y,
+  BALL_RADIUS, clampPaddle, createGame, createFrameClock, stepGame,
+  type GameState, type MeetingBrick,
+} from '../lib/game';
 
-const INITIAL_SPEED = 2.4;
-const MAX_SPEED = 9;
-const HIT_SPEED_MULTIPLIER = 1.06;
-
-// 08:00 → 20:00 in 30-min slots => 12h * 2 = 24 slots
+// 08:00 to 20:00 in 30-minute slots.
 const SLOTS_PER_DAY = 24;
-
-type GameState = {
-  ballX: number;
-  ballY: number;
-  ballVX: number;
-  ballVY: number;
-  paddleX: number;
-  ballFrozenUntil: number | null;
-};
-
-type MeetingBrick = {
-  id: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  title: string;
-  active: boolean;
-};
+const fitText = createTextFitter();
 
 const MEETING_TITLES = [
   'Daily Standup',
@@ -103,6 +85,8 @@ export default function GamePage() {
   };
 
   const triggerGameOver = () => {
+    if (toastTimeoutRef.current !== null) window.clearTimeout(toastTimeoutRef.current);
+    setShowToast(false);
     setGameOverMessage('Game over. You now have to attend the remaining meetings :D');
 
     // Stop loop and reset to start screen
@@ -165,7 +149,7 @@ export default function GamePage() {
         const endSlot = Math.min(slotsPerDay, startSlot + durationSlots);
 
         const paddingX = 6;
-        const paddingY = 4;
+        const paddingY = 2;
 
         const x = leftGutter + day * colWidth + paddingX;
         const y = gridTop + startSlot * slotHeight + paddingY;
@@ -207,220 +191,67 @@ export default function GamePage() {
     remainingMeetingsRef.current = bricks.length;
   };
 
-  const startGame = () => {
+  const startGame = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
     if (!name.trim()) return;
 
+    if (gameStateRef.current) return;
+    clearRoundMessages();
+    generateMeetingBricks();
+    gameStateRef.current = createGame(event.timeStamp, 3000);
     setHasStarted(true);
-
-    setTimeout(() => {
-      generateMeetingBricks();
-
-      const now = performance.now();
-
-      const initialState: GameState = {
-        ballX: CANVAS_WIDTH / 2,
-        ballY: CANVAS_HEIGHT - 80,
-        ballVX: 0,
-        ballVY: 0,
-        paddleX: CANVAS_WIDTH / 2,
-        ballFrozenUntil: now + 3000, // 3s delay
-      };
-
-      setBallVelocityWithSpeed(initialState, INITIAL_SPEED);
-      gameStateRef.current = initialState;
-
-      startLoop();
-    }, 0);
+    startLoop();
   };
 
-  const resetGame = () => {
+  const clearRoundMessages = () => {
+    if (toastTimeoutRef.current !== null) window.clearTimeout(toastTimeoutRef.current);
+    if (gameOverTimeoutRef.current !== null) window.clearTimeout(gameOverTimeoutRef.current);
+    toastTimeoutRef.current = null;
+    gameOverTimeoutRef.current = null;
+    setShowToast(false);
+    setCanceledTitle(null);
+    setGameOverMessage(null);
+  };
+
+  const resetGame = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    clearRoundMessages();
     generateMeetingBricks();
-    const now = performance.now();
-
-    if (!gameStateRef.current) {
-      const newState: GameState = {
-        ballX: CANVAS_WIDTH / 2,
-        ballY: CANVAS_HEIGHT - 80,
-        ballVX: 0,
-        ballVY: 0,
-        paddleX: CANVAS_WIDTH / 2,
-        ballFrozenUntil: now + 2000,
-      };
-      setBallVelocityWithSpeed(newState, INITIAL_SPEED);
-      gameStateRef.current = newState;
-    } else {
-      const state = gameStateRef.current;
-      state.ballX = CANVAS_WIDTH / 2;
-      state.ballY = CANVAS_HEIGHT - 80;
-      state.paddleX = CANVAS_WIDTH / 2;
-      state.ballFrozenUntil = now + 2000;
-      setBallVelocityWithSpeed(state, INITIAL_SPEED);
-    }
-
-    if (animationFrameRef.current === null) {
-      startLoop();
-    }
+    gameStateRef.current = createGame(event.timeStamp, 2000);
+    startLoop();
   };
 
   const startLoop = () => {
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-
-    const loop = () => {
-      updateGame();
-      drawGame();
-      animationFrameRef.current = requestAnimationFrame(loop);
-    };
-
-    loop();
-  };
-
-  const updateGame = () => {
-    const state = gameStateRef.current;
-    if (!state) return;
-
-    // Endgame: all meetings cleared → freeze ball
-    if (remainingMeetingsRef.current <= 0) {
-      return;
-    }
-
-    const paddleWidth = 140;
-    const paddleHeight = 16;
-    const paddleY = CANVAS_HEIGHT - 40;
-    const ballRadius = 8;
-
-    const now = performance.now();
-    if (state.ballFrozenUntil && now < state.ballFrozenUntil) {
-      return;
-    } else if (state.ballFrozenUntil && now >= state.ballFrozenUntil) {
-      state.ballFrozenUntil = null;
-    }
-
-    // Move ball
-    state.ballX += state.ballVX;
-    state.ballY += state.ballVY;
-
-    // Wall collisions (left/right)
-    if (state.ballX - ballRadius < 0) {
-      state.ballX = ballRadius;
-      state.ballVX *= -1;
-    }
-    if (state.ballX + ballRadius > CANVAS_WIDTH) {
-      state.ballX = CANVAS_WIDTH - ballRadius;
-      state.ballVX *= -1;
-    }
-
-    // Ceiling
-    if (state.ballY - ballRadius < 0) {
-      state.ballY = ballRadius;
-      state.ballVY *= -1;
-    }
-
-    // Paddle collision
-    const paddleLeft = state.paddleX - paddleWidth / 2;
-    const paddleRight = state.paddleX + paddleWidth / 2;
-    const paddleTop = paddleY;
-    const paddleBottom = paddleY + paddleHeight;
-
-    const ballBottom = state.ballY + ballRadius;
-
-    if (
-      ballBottom >= paddleTop &&
-      state.ballY <= paddleBottom &&
-      state.ballX >= paddleLeft &&
-      state.ballX <= paddleRight &&
-      state.ballVY > 0
-    ) {
-      state.ballY = paddleTop - ballRadius;
-
-      const speed =
-        Math.sqrt(state.ballVX * state.ballVX + state.ballVY * state.ballVY) ||
-        INITIAL_SPEED;
-
-      const hitOffset = (state.ballX - state.paddleX) / (paddleWidth / 2); // -1..1
-      const clampedOffset = clamp(hitOffset, -1, 1);
-
-      const newVX = clampedOffset * speed;
-      const remaining = Math.max(speed * speed - newVX * newVX, 0.5);
-      const newVY = -Math.sqrt(remaining);
-
-      state.ballVX = newVX;
-      state.ballVY = newVY;
-    }
-
-    // Meeting bricks collision
-    handleBrickCollisions(state, ballRadius);
-
-    // Ball falls below paddle → GAME OVER
-    if (state.ballY - ballRadius > CANVAS_HEIGHT) {
-      triggerGameOver();
-    }
-  };
-
-  const handleBrickCollisions = (state: GameState, ballRadius: number) => {
-    const bricks = bricksRef.current;
-    if (!bricks.length) return;
-
-    for (let i = 0; i < bricks.length; i++) {
-      const brick = bricks[i];
-      if (!brick.active) continue;
-
-      const { x, y, width, height, title } = brick;
-
-      const closestX = clamp(state.ballX, x, x + width);
-      const closestY = clamp(state.ballY, y, y + height);
-
-      const distX = state.ballX - closestX;
-      const distY = state.ballY - closestY;
-      const distanceSquared = distX * distX + distY * distY;
-
-      if (distanceSquared <= ballRadius * ballRadius) {
-        brick.active = false;
-        showMeetingCanceledToast(title);
-
-        setRemainingMeetings((prev) => {
-          const next = prev > 0 ? prev - 1 : 0;
-          remainingMeetingsRef.current = next;
-          return next;
-        });
-
-        const overlapLeft = Math.abs(state.ballX - x);
-        const overlapRight = Math.abs(state.ballX - (x + width));
-        const overlapTop = Math.abs(state.ballY - y);
-        const overlapBottom = Math.abs(state.ballY - (y + height));
-
-        const minOverlap = Math.min(
-          overlapLeft,
-          overlapRight,
-          overlapTop,
-          overlapBottom
-        );
-
-        if (minOverlap === overlapLeft || minOverlap === overlapRight) {
-          state.ballVX *= -1;
-        } else {
-          state.ballVY *= -1;
+    if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
+    const clock = createFrameClock();
+    const loop = (now: number) => {
+      animationFrameRef.current = null;
+      if (!gameStateRef.current) return;
+      if (document.hidden) {
+        clock.reset();
+      } else {
+        const steps = clock.advance(now);
+        for (let i = 0; i < steps; i++) {
+          const state = gameStateRef.current;
+          if (!state || remainingMeetingsRef.current === 0) break;
+          const result = stepGame(state, bricksRef.current, now);
+          if (result.hit) {
+            remainingMeetingsRef.current = Math.max(0, remainingMeetingsRef.current - 1);
+            setRemainingMeetings(remainingMeetingsRef.current);
+            showMeetingCanceledToast(result.hit.title);
+          }
+          if (result.lost) {
+            triggerGameOver();
+            return;
+          }
         }
-
-        // Speed up after each meeting hit
-        const currentSpeed = Math.sqrt(
-          state.ballVX * state.ballVX + state.ballVY * state.ballVY
-        );
-        const targetSpeed = Math.min(
-          MAX_SPEED,
-          currentSpeed * HIT_SPEED_MULTIPLIER
-        );
-
-        if (currentSpeed > 0 && targetSpeed > currentSpeed) {
-          const factor = targetSpeed / currentSpeed;
-          state.ballVX *= factor;
-          state.ballVY *= factor;
-        }
-
-        break;
+        drawGame();
       }
-    }
+      if (gameStateRef.current && remainingMeetingsRef.current > 0) {
+        animationFrameRef.current = requestAnimationFrame(loop);
+      }
+    };
+    animationFrameRef.current = requestAnimationFrame(loop);
   };
 
   const drawGame = () => {
@@ -431,10 +262,23 @@ export default function GamePage() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const paddleWidth = 140;
-    const paddleHeight = 16;
-    const paddleY = CANVAS_HEIGHT - 40;
-    const ballRadius = 8;
+    // Match the backing buffer to the displayed size for sharp text on large
+    // and high-DPI screens, while keeping physics in 840 x 560 coordinates.
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const pixelRatio = window.devicePixelRatio || 1;
+    const width = Math.round(rect.width * pixelRatio);
+    const height = Math.round(rect.height * pixelRatio);
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    ctx.setTransform(width / CANVAS_WIDTH, 0, 0, height / CANVAS_HEIGHT, 0, 0);
+
+    const paddleWidth = PADDLE_WIDTH;
+    const paddleHeight = PADDLE_HEIGHT;
+    const paddleY = PADDLE_Y;
+    const ballRadius = BALL_RADIUS;
 
     const headerHeight = 56;
     const footerHeight = 32;
@@ -470,12 +314,13 @@ export default function GamePage() {
     ctx.textAlign = 'start';
     ctx.textBaseline = 'alphabetic';
     ctx.fillText(
-      `Dev Calendar – ${name || 'Anonymous Hero'}`,
+      fitText(ctx, `Dev Calendar – ${name || 'Anonymous Hero'}`, CANVAS_WIDTH - 222),
       16,
       headerHeight / 2 - 4
     );
 
-    // Meeting counter
+    // The animation callback outlives React renders, so read the live count.
+    const remainingMeetings = remainingMeetingsRef.current;
     ctx.font =
       '11px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.fillStyle = '#4b5563';
@@ -519,7 +364,8 @@ export default function GamePage() {
     const slotHeight = gridHeight / slotsPerDay;
 
     SLOT_LABELS.forEach((label, index) => {
-      const y = gridTop + index * (gridHeight / (SLOT_LABELS.length - 1));
+      const y = Math.max(gridTop + 7, Math.min(gridBottom - 7,
+        gridTop + index * (gridHeight / (SLOT_LABELS.length - 1))));
       ctx.fillText(label, leftGutter - 8, y);
     });
 
@@ -564,18 +410,21 @@ export default function GamePage() {
       ctx.lineWidth = 1;
       ctx.stroke();
 
+      ctx.save();
+      roundRect(ctx, brick.x + 1, brick.y + 1, brick.width - 2, brick.height - 2, 5);
+      ctx.clip();
+      const fontSize = Math.min(11, brick.height - 4);
       ctx.font =
-        '11px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        `${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
       ctx.fillStyle = '#111827';
       const paddingX = 6;
-      const paddingY = 12;
       const maxWidth = brick.width - paddingX * 2;
-      const title =
-        brick.title.length > 22
-          ? brick.title.slice(0, 21) + '…'
-          : brick.title;
-
-      ctx.fillText(title, brick.x + paddingX, brick.y + paddingY, maxWidth);
+      const title = fitText(ctx, brick.title, maxWidth);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const labelY = brick.y + Math.min(brick.height / 2, 4 + fontSize / 2);
+      ctx.fillText(title, brick.x + paddingX, labelY);
+      ctx.restore();
     });
 
     // Paddle
@@ -608,6 +457,16 @@ export default function GamePage() {
     );
   };
 
+  const redrawCanvas = useEffectEvent(() => drawGame());
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => redrawCanvas());
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, []);
+
   // Mouse controls paddle – corrected for fullscreen scaling
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const state = gameStateRef.current;
@@ -618,7 +477,7 @@ export default function GamePage() {
     const relativeX = e.clientX - rect.left; // 0..rect.width
     const normalizedX = (relativeX / rect.width) * CANVAS_WIDTH; // 0..CANVAS_WIDTH
 
-    const clampedX = Math.max(0, Math.min(CANVAS_WIDTH, normalizedX));
+    const clampedX = clampPaddle(normalizedX);
     state.paddleX = clampedX;
   };
 
@@ -631,10 +490,9 @@ export default function GamePage() {
 
       const step = 24;
 
-      if (e.key === 'ArrowLeft') {
-        state.paddleX = Math.max(0, state.paddleX - step);
-      } else if (e.key === 'ArrowRight') {
-        state.paddleX = Math.min(CANVAS_WIDTH, state.paddleX + step);
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        state.paddleX = clampPaddle(state.paddleX + (e.key === 'ArrowLeft' ? -step : step));
       }
     };
 
@@ -644,8 +502,10 @@ export default function GamePage() {
 
   useEffect(() => {
     return () => {
+      gameStateRef.current = null;
       if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
       if (toastTimeoutRef.current !== null) {
         window.clearTimeout(toastTimeoutRef.current);
@@ -662,7 +522,7 @@ export default function GamePage() {
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center px-4 relative overflow-hidden">
       {/* Name / start overlay */}
       {!hasStarted && (
-        <div className="mb-10 w-full max-w-md z-10">
+        <div className="w-full max-w-md z-10 py-6">
           <div className="bg-slate-900/85 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur">
             <h1 className="text-2xl font-semibold mb-2">
               Cancel All Meetings 🎯
@@ -737,11 +597,7 @@ export default function GamePage() {
 
       {/* Game area – fullscreen when started */}
       <div
-        className={
-          hasStarted
-            ? 'fixed inset-0 flex items-center justify-center bg-slate-950'
-            : 'border border-slate-800 rounded-3xl shadow-2xl bg-slate-900/70 backdrop-blur p-4'
-        }
+        className={hasStarted ? 'fixed inset-0 flex items-center justify-center bg-slate-950' : 'hidden'}
       >
         <canvas
           ref={canvasRef}
@@ -750,7 +606,7 @@ export default function GamePage() {
           onMouseMove={handleMouseMove}
           className={
             hasStarted
-              ? 'rounded-2xl bg-slate-950 shadow-2xl w-[min(100vw-40px,1100px)] h-auto'
+              ? 'game-canvas rounded-2xl bg-slate-950 shadow-2xl'
               : 'rounded-2xl bg-slate-950'
           }
         />
@@ -760,10 +616,6 @@ export default function GamePage() {
 }
 
 /* Helpers */
-
-function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value));
-}
 
 function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -801,13 +653,4 @@ function roundRect(
   ctx.lineTo(x, y + r);
   ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
-}
-
-function setBallVelocityWithSpeed(state: GameState, speed: number) {
-  const minAngle = (-75 * Math.PI) / 180;
-  const maxAngle = (-45 * Math.PI) / 180;
-  const angle = minAngle + Math.random() * (maxAngle - minAngle);
-
-  state.ballVX = Math.cos(angle) * speed;
-  state.ballVY = Math.sin(angle) * speed;
 }

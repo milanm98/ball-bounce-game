@@ -1,0 +1,235 @@
+{
+  "viewports": [
+    {
+      "buffer": [
+        840,
+        560
+      ],
+      "canvas": [
+        92,
+        20,
+        840,
+        560
+      ],
+      "dpr": 1,
+      "fits": true,
+      "overflow": false,
+      "ratio": 1.5,
+      "viewport": [
+        1024,
+        600
+      ]
+    },
+    {
+      "buffer": [
+        984,
+        656
+      ],
+      "canvas": [
+        20,
+        56,
+        984,
+        656
+      ],
+      "dpr": 1,
+      "fits": true,
+      "overflow": false,
+      "ratio": 1.5,
+      "viewport": [
+        1024,
+        768
+      ]
+    },
+    {
+      "buffer": [
+        1020,
+        680
+      ],
+      "canvas": [
+        130,
+        20,
+        1020,
+        680
+      ],
+      "dpr": 1,
+      "fits": true,
+      "overflow": false,
+      "ratio": 1.5,
+      "viewport": [
+        1280,
+        720
+      ]
+    },
+    {
+      "buffer": [
+        1092,
+        728
+      ],
+      "canvas": [
+        137,
+        20,
+        1092,
+        728
+      ],
+      "dpr": 1,
+      "fits": true,
+      "overflow": false,
+      "ratio": 1.5,
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "buffer": [
+        1100,
+        733
+      ],
+      "canvas": [
+        170,
+        83.328125,
+        1100,
+        733.328125
+      ],
+      "dpr": 1,
+      "fits": true,
+      "overflow": false,
+      "ratio": 1.5000106534847548,
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "buffer": [
+        1100,
+        733
+      ],
+      "canvas": [
+        410,
+        173.328125,
+        1100,
+        733.328125
+      ],
+      "dpr": 1,
+      "fits": true,
+      "overflow": false,
+      "ratio": 1.5000106534847548,
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "buffer": [
+        1100,
+        733
+      ],
+      "canvas": [
+        730,
+        353.328125,
+        1100,
+        733.328125
+      ],
+      "dpr": 1,
+      "fits": true,
+      "overflow": false,
+      "ratio": 1.5000106534847548,
+      "viewport": [
+        2560,
+        1440
+      ]
+    },
+    {
+      "buffer": [
+        1100,
+        733
+      ],
+      "canvas": [
+        1170,
+        353.328125,
+        1100,
+        733.328125
+      ],
+      "dpr": 1,
+      "fits": true,
+      "overflow": false,
+      "ratio": 1.5000106534847548,
+      "viewport": [
+        3440,
+        1440
+      ]
+    },
+    {
+      "buffer": [
+        1100,
+        733
+      ],
+      "canvas": [
+        1370,
+        713.328125,
+        1100,
+        733.328125
+      ],
+      "dpr": 1,
+      "fits": true,
+      "overflow": false,
+      "ratio": 1.5000106534847548,
+      "viewport": [
+        3840,
+        2160
+      ]
+    }
+  ],
+  "intro": [
+    {
+      "fits": true,
+      "overflow": false,
+      "viewport": [
+        1024,
+        600
+      ]
+    },
+    {
+      "fits": true,
+      "overflow": false,
+      "viewport": [
+        1280,
+        720
+      ]
+    },
+    {
+      "fits": true,
+      "overflow": false,
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "fits": true,
+      "overflow": false,
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "fits": true,
+      "overflow": false,
+      "viewport": [
+        3840,
+        2160
+      ]
+    }
+  ],
+  "timing": [
+    {
+      "level": "info",
+      "message": "QA_FRAME_TIMING {\"samples\":300,\"averageMs\":8.332333333333333,\"p95Ms\":8.400000000000091,\"maximumMs\":8.5}",
+      "timestamp": "2026-10-28T09:41:38.921Z",
+      "url": "webpack-internal:///(app-pages-browser)/./node_modules/next/dist/next-devtools/shared/forward-logs-shared.js"
+    }
+  ],
+  "consoleErrors": []
+}

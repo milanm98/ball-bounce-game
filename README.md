@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cancel All Meetings
 
-## Getting Started
+A desktop canvas arcade game: bounce the ball with the paddle to clear a calendar of meetings.
 
-First, run the development server:
+## Local development
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Use Node.js 24 LTS (Node.js 22.13+ on the 22.x line is also supported).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+~~~sh
+npm ci
+npm run dev -- --hostname 127.0.0.1
+~~~
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open [the local game](http://127.0.0.1:3000). A viewport at least 1024 CSS pixels wide is required. Enter a name and start; move the mouse over the canvas or use the left/right arrow keys. The ball launches after three seconds. Missing the paddle returns to the intro; clearing the board enables New day.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Checks
 
-## Learn More
+~~~sh
+npm test
+npm run lint
+npm run typecheck
+npm run build
+npm audit
+~~~
 
-To learn more about Next.js, take a look at the following resources:
+The tests cover physics at 30/60/120/144 Hz, launch timing, wall/meeting/paddle collisions, speed limits, and game over. React integration tests use jsdom with a mocked canvas and animation clock to check the live counter, controls, loss/restart, win/New day, and timer/frame cleanup under Strict Mode. They do not verify browser rendering.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+To run the production build locally:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+~~~sh
+npm run build
+npm start -- --hostname 127.0.0.1
+~~~
 
-## Deploy on Vercel
+Development and production builds use Next.js's supported webpack compiler because Turbopack's CSS worker crashes on this Windows environment. Fonts use the existing system stack, so builds do not download fonts.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Manual regression checks
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Confirm blank and whitespace-only names cannot start a round.
+- Check the launch delay, mouse and arrow controls, and paddle bounds.
+- Hit meetings and confirm the canvas counter decreases; miss the paddle and start again.
+- Clear a calendar and use New day; confirm no old toast carries into the new round.
+- Switch tabs and return; the ball should not fast-forward across the board.
+- Resize to a short desktop viewport; the complete board should remain visible. Below 1024 pixels wide, the existing desktop-only notice should appear.
+
+## Browser QA
+
+The desktop layout fixes and verification results are recorded in [the 2026-10-28 QA report](qa/2026-10-28/README.md), including viewport measurements, screenshots, and a short frame-timing sample.
