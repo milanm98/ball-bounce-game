@@ -46,3 +46,11 @@ Actual browser device pixel ratio was 1. A 2× pixel ratio, scaled pointer mappi
 - [Small-desktop intro](intro-1024x600.png)
 - [Laptop gameplay](desktop-1366x768.png)
 - [Full-HD gameplay](desktop-1920x1080.png)
+
+## Follow-up: meeting names and launch speed
+
+Replaced the joke meeting titles with common team meetings, including Sprint Retrospective, Code Review, Backlog Refinement, Release Planning, and Customer Feedback. Increased starting ball speed from 2.4 to 3 logical pixels per physics tick (25% faster, 180 pixels per second at 60 Hz).
+
+Browser-checked the updated labels, restart, and arrow controls. No browser console errors or warnings were captured. All 25 automated tests, ESLint, TypeScript, and the production build passed. The added launch test verifies one second of actual ball travel.
+
+![Updated meeting names](realistic-meetings.png)

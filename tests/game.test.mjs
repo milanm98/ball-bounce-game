@@ -108,3 +108,12 @@ test('ball below the board produces game over', () => {
   const ball = state({ ballY: CANVAS_HEIGHT + BALL_RADIUS, ballVY: 4 });
   assert.equal(stepGame(ball, [], 0).lost, true);
 });
+
+
+test('initial launch travels 180 logical pixels in one second at 60 physics ticks', () => {
+  const ball = createGame(0, 0);
+  const origin = {x: ball.ballX, y: ball.ballY};
+  for (let tick = 1; tick <= 60; tick++) stepGame(ball, [], tick * 1000 / 60);
+  assert.ok(ball.ballY < origin.y);
+  assert.ok(Math.abs(Math.hypot(ball.ballX - origin.x, ball.ballY - origin.y) - 180) < 1e-8);
+});
