@@ -74,3 +74,15 @@ Removed the special pink fill, red/bold border, bold text, and two-line layout. 
 Verified the appearance in browser at 1024×600 with no console errors or warnings. All 29 automated tests, lint, TypeScript, and the production build passed. A rendering regression test checks the shared styling for every meeting.
 
 ![Milan meetings with ordinary styling](milan-ordinary-style.png)
+
+## Follow-up: full meeting names
+
+All meeting labels now use measured word wrapping rather than ellipses. The minimum generated meeting duration is three slots, giving every box at least 50 logical pixels of height for up to three lines at the same 11-pixel regular font. Milan meetings share this exact layout, palette, and border. Text measurement is cached between animation frames.
+
+Browser checks passed at 1024×480, 1024×600, 1280×720, 1366×768, 1920×1080, and 3840×2160. Full names, including both Milan meetings, remained visible; the board fit without page overflow. No browser console errors or warnings were captured.
+
+All 31 tests, lint, TypeScript, and the production build passed. Tests verify all 21 current titles fit in three lines without losing words, rendering within the minimum box height, shared Milan/ordinary styling, and cached wrapping.
+
+- [Small laptop full titles](full-titles-1024x600.png)
+- [Laptop full titles](full-titles-1366x768.png)
+- [Viewport results](full-title-viewport-results.json)

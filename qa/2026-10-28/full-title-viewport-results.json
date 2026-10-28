@@ -1,0 +1,74 @@
+[
+  {
+    "canvas": [
+      660,
+      440
+    ],
+    "fits": true,
+    "overflow": false,
+    "viewport": [
+      1024,
+      480
+    ]
+  },
+  {
+    "canvas": [
+      840,
+      560
+    ],
+    "fits": true,
+    "overflow": false,
+    "viewport": [
+      1024,
+      600
+    ]
+  },
+  {
+    "canvas": [
+      1020,
+      680
+    ],
+    "fits": true,
+    "overflow": false,
+    "viewport": [
+      1280,
+      720
+    ]
+  },
+  {
+    "canvas": [
+      1092,
+      728
+    ],
+    "fits": true,
+    "overflow": false,
+    "viewport": [
+      1366,
+      768
+    ]
+  },
+  {
+    "canvas": [
+      1100,
+      733.328125
+    ],
+    "fits": true,
+    "overflow": false,
+    "viewport": [
+      1920,
+      1080
+    ]
+  },
+  {
+    "canvas": [
+      1100,
+      733.328125
+    ],
+    "fits": true,
+    "overflow": false,
+    "viewport": [
+      3840,
+      2160
+    ]
+  }
+]

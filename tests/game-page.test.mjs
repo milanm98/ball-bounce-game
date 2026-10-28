@@ -48,7 +48,7 @@ async function setup(engine = game, {pixelRatio = 1, displayWidth = 840} = {}) {
     moveTo(x, y) { if (y === game.PADDLE_Y) paddle = {left: x - 8}; },
     fillText(text, x, y) {
       if (/^\d+ meetings? to cancel$/.test(text)) counters.push(Number.parseInt(text));
-      if (this.fillStyle === '#111827' && Number.parseFloat(this.font) <= 11) labels.push({text, x, y, size:Number.parseFloat(this.font), font:this.font, stroke:this.strokeStyle, lineWidth:this.lineWidth});
+      if (this.fillStyle === '#111827' && Number.parseFloat(this.font) <= 11) labels.push({text, x, y, meeting:meetingFills.length - 1, size:Number.parseFloat(this.font), font:this.font, stroke:this.strokeStyle, lineWidth:this.lineWidth});
     },
   }, {get(target, key) { return key in target ? target[key] : () => {}; }});
   dom.window.HTMLCanvasElement.prototype.getContext = () => context;
@@ -193,22 +193,28 @@ test('rendering scales the backing buffer for high-DPI and pointer coordinates s
   } finally { await h.close(); }
 });
 
-test('half-hour meeting text stays inside the shortest generated boxes', async () => {
+test('complete meeting titles fit within the shortest generated boxes', async () => {
   const originalRandom = Math.random;
   Math.random = () => 0;
   const h = await setup();
   try {
     await h.start();
     await h.frame();
-    assert.ok(h.labels.length > 0);
-    assert.equal(h.labels.length, h.counters.at(-1) + 2);
-    const shortLabels = h.labels.filter(label => label.size === 10);
-    assert.ok(shortLabels.length > 0);
-    for (const label of shortLabels) {
-      assert.ok(label.size >= 10);
-      assert.ok(label.y - label.size / 2 >= 58);
-      assert.ok(label.y + label.size / 2 <= 72);
-      assert.ok(label.text.length * 6 <= 88);
+    assert.equal(h.meetingFills.length, h.counters.at(-1) + 2);
+    for (let index = 0; index < h.meetingFills.length; index++) {
+      const lines = h.labels.filter(label => label.meeting === index);
+      assert.ok(lines.length > 0 && lines.length <= 3);
+      const top = lines[0].y - 11.5;
+      for (const label of lines) {
+        assert.equal(label.size, 11);
+        assert.ok(label.y - label.size / 2 >= top + 5);
+        assert.ok(label.y + label.size / 2 <= top + 45);
+        assert.ok(label.text.length * 6 <= 88);
+        assert.ok(!label.text.includes('…'));
+      }
+    }
+    for (const index of [0, 1]) {
+      assert.equal(h.labels.filter(label => label.meeting === index).map(label => label.text).join(' '), meetings.MILAN_MEETING_TITLE);
     }
   } finally { await h.close(); Math.random = originalRandom; }
 });
@@ -247,21 +253,21 @@ test('Milan collision opens a persistent popup, stops the loop, and Try again st
 });
 
 
-test('Milan meetings use the same palette, border, font, and single-line labels as ordinary meetings', async () => {
+test('Milan meetings use the same palette, border, font, and wrapping as ordinary meetings', async () => {
   const h = await setup();
   try {
     await h.start();
     await h.frame();
-    assert.equal(h.labels.length, h.counters.at(-1) + 2);
-    assert.equal(h.meetingFills.length, h.labels.length);
+    assert.equal(h.meetingFills.length, h.counters.at(-1) + 2);
     const colors = ['#bfdbfe', '#a7f3d0', '#fde68a', '#fed7aa', '#e9d5ff'];
-    h.labels.forEach((label, index) => {
-      assert.equal(h.meetingFills[index], colors[index % colors.length]);
+    h.labels.forEach(label => {
+      assert.equal(h.meetingFills[label.meeting], colors[label.meeting % colors.length]);
       assert.equal(label.stroke, '#d1d5db');
       assert.equal(label.lineWidth, 1);
       assert.doesNotMatch(label.font, /bold/);
     });
-    assert.ok(h.labels[0].text.startsWith('talk with'));
-    assert.ok(h.labels[1].text.startsWith('talk with'));
+    for (const index of [0, 1]) {
+      assert.equal(h.labels.filter(label => label.meeting === index).map(label => label.text).join(' '), meetings.MILAN_MEETING_TITLE);
+    }
   } finally { await h.close(); }
 });

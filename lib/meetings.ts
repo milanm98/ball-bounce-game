@@ -5,7 +5,7 @@ export const MILAN_MEETING_TITLE = 'talk with Milan about memes';
 export const MILAN_GAME_OVER_MESSAGE =
   'You really wanted to cancel meet with Milan? Its game over now. try again.';
 
-const MEETING_TITLES = [
+export const MEETING_TITLES = [
   'Daily Standup', 'Sprint Planning', 'Sprint Retrospective', 'Code Review',
   'Project Sync', 'Technical Debt Review', 'Product Planning', 'Cross-Team Sync',
   'Roadmap Review', 'Incident Postmortem', 'Quarterly All-Hands', 'Stakeholder Sync',
@@ -45,7 +45,8 @@ export function createMeetingCalendar(): MeetingBrick[] {
     let created = 0;
     for (let attempt = 0; created < count && attempt < 25; attempt++) {
       const start = randomInt(0, 12);
-      const duration = randomInt(1, 6);
+      // Every box has room for three readable lines, including long titles.
+      const duration = randomInt(3, 6);
       const title = MEETING_TITLES[(bricks.length + day + start) % MEETING_TITLES.length];
       const candidate = meeting(day, start, duration, title);
       if (bricks.some(b => candidate.x < b.x + b.width && candidate.x + candidate.width > b.x &&

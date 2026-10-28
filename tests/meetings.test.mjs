@@ -12,6 +12,7 @@ test('every calendar reserves exactly two separated, visible, non-overlapping Mi
       Math.random = random;
       for (let round = 0; round < 100; round++) {
         const bricks = createMeetingCalendar();
+        assert.ok(bricks.every(brick => brick.height >= 50), 'every title needs room to wrap');
         const protectedMeetings = bricks.filter(b => b.isMilan);
         assert.equal(protectedMeetings.length, 2);
         assert.equal(bricks.filter(b => b.title === MILAN_MEETING_TITLE).length, 2);

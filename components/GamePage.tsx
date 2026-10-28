@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { createTextFitter } from '../lib/canvas-text';
+import { createTextFitter, createTextWrapper } from '../lib/canvas-text';
 import { createMeetingCalendar, MILAN_GAME_OVER_MESSAGE, MILAN_MEETING_TITLE, SLOTS_PER_DAY } from '../lib/meetings';
 
 import {
@@ -11,6 +11,7 @@ import {
 } from '../lib/game';
 
 const fitText = createTextFitter();
+const wrapText = createTextWrapper();
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -322,17 +323,19 @@ export default function GamePage() {
       ctx.save();
       roundRect(ctx, brick.x + 1, brick.y + 1, brick.width - 2, brick.height - 2, 5);
       ctx.clip();
-      const fontSize = Math.min(11, brick.height - 4);
+      const fontSize = 11;
       ctx.font =
         `${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
       ctx.fillStyle = '#111827';
       const paddingX = 6;
       const maxWidth = brick.width - paddingX * 2;
-      const title = fitText(ctx, brick.title, maxWidth);
+      const lines = wrapText(ctx, brick.title, maxWidth);
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      const labelY = brick.y + Math.min(brick.height / 2, 4 + fontSize / 2);
-      ctx.fillText(title, brick.x + paddingX, labelY);
+      const lineHeight = 13;
+      lines.forEach((line, lineIndex) => {
+        ctx.fillText(line, brick.x + paddingX, brick.y + 5 + lineHeight * (lineIndex + 0.5));
+      });
       ctx.restore();
     });
 
